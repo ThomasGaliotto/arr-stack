@@ -13,7 +13,7 @@ This document describes the high-level architecture of the ARR Media Stack.
 5. **Lidarr** - Music management
 6. **Prowlarr** - Centralized indexer management
 7. **Bazarr** - Subtitle management for Sonarr/Radarr
-8. **Jellyseerr** - User request interface
+8. **Seerr** - User request interface
 9. **Jellyfin** - Media server
 10. **Recyclarr** - Declarative quality profile configuration
 
@@ -29,7 +29,7 @@ The stack uses three isolated Docker networks:
 
 ```mermaid
 graph TD
-    A[User Request] --> B[Jellyseerr UI/API]
+    A[User Request] --> B[Seerr UI/API]
     B --> C[Sonarr/Radarr API]
     C --> D[Prowlarr Indexer Search]
     D --> E[qBittorrent Download Queue]

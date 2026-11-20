@@ -22,15 +22,15 @@ make deploy
 
 # 5. Access services:
 #    Jellyfin UI: http://localhost:8096
-#    Jellyseerr UI: http://localhost:8097 (if exposed)
+#    Seerr UI: http://localhost:8097 (if exposed)
 ```
 
 ## Architecture Overview
 
-- **Core Services**: Gluetun, qBittorrent, Sonarr, Radarr, Lidarr, Prowlarr, Bazarr, Recyclarr, Jellyseerr, Jellyfin
+- **Core Services**: Gluetun, qBittorrent, Sonarr, Radarr, Lidarr, Prowlarr, Bazarr, Recyclarr, Seerr, Jellyfin
 - **Network Isolation**: Three networks (`download_net`, `app_net`, `media_net`) with strict separation
   - `download_net`: Gluetun + qBittorrent only (VPN traffic)
-  - `app_net`: ARR services communication (Sonarr/Radarr/Lidarr/Prowlarr/Bazarr/Jellyseerr/Recyclarr)
+  - `app_net`: ARR services communication (Sonarr/Radarr/Lidarr/Prowlarr/Bazarr/Seerr/Recyclarr)
   - `media_net`: Jellyfin media server (internal, isolated from other networks)
 - **VPN Kill-Switch**: Gluetun routes all qBittorrent traffic; no direct internet access when VPN unavailable
 - **Secrets Management**: Runtime injection only via Docker secrets or environment variables - never committed to Git
@@ -115,7 +115,7 @@ Key configuration sections:
 Required secrets (injected by orchestrator):
 - Proton VPN WireGuard private key (`/data/secrets/gluetun`)
 - ARR service API keys where applicable  
-- Jellyseerr admin credentials/API keys if not auto-generated
+- Seerr admin credentials/API keys if not auto-generated
 
 Secrets are provided via:
 1. Docker Compose secrets mechanism
@@ -177,7 +177,7 @@ The stack uses three isolated networks:
    - No direct internet access when VPN is unavailable (kill-switch)
 
 2. **app_net** (`arr-stack-app-net`)  
-   - ARR services: Sonarr, Radarr, Lidarr, Prowlarr, Bazarr, Jellyseerr, Recyclarr
+   - ARR services: Sonarr, Radarr, Lidarr, Prowlarr, Bazarr, Seerr, Recyclarr
    - Internal communication between services only
    - Not exposed to public internet by default
 

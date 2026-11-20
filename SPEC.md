@@ -14,7 +14,7 @@ The stack must provide:
 * BitTorrent downloading.
 * Proton VPN network isolation for BitTorrent traffic.
 * Media serving through Jellyfin.
-* User requests through Jellyseerr.
+* User requests through Seerr.
 * Declarative quality/profile configuration.
 * Persistent storage.
 * Backup and restore capabilities.
@@ -39,7 +39,7 @@ The project must provide the following Docker services:
 * Lidarr
 * Prowlarr
 * Bazarr
-* Jellyseerr
+* Seerr (successor of Jellyseerr)
 * Jellyfin
 * Recyclarr
 
@@ -175,12 +175,12 @@ Hardware-specific configuration must remain optional and must not prevent the st
 
 ## User request requirements
 
-Jellyseerr must provide a user-facing interface for requesting:
+Seerr must provide a user-facing interface for requesting:
 
 * Movies.
 * TV series.
 
-Jellyseerr must integrate with:
+Seerr must integrate with:
 
 * Radarr.
 * Sonarr.
@@ -261,7 +261,7 @@ ARR services must be able to communicate with qBittorrent.
 
 ARR services must be able to communicate with Prowlarr.
 
-Sonarr and Radarr must be accessible by Jellyseerr.
+Sonarr and Radarr must be accessible by Seerr.
 
 Jellyfin must be able to access the media library.
 
@@ -346,7 +346,7 @@ The project must support secrets for:
 * Proton VPN.
 * WireGuard private key.
 * ARR API keys where required.
-* Jellyseerr credentials/API keys where required.
+* Seerr credentials/API keys where required.
 * Other service credentials.
 
 Secrets must not appear in:
@@ -703,7 +703,7 @@ Backups must include:
 * Service configuration.
 * ARR configuration.
 * Jellyfin configuration.
-* Jellyseerr configuration.
+* Seerr configuration.
 * Prowlarr configuration.
 * qBittorrent configuration.
 * Recyclarr configuration.
@@ -842,8 +842,8 @@ The following test categories are mandatory:
 * Sonarr can communicate with qBittorrent.
 * Radarr can communicate with qBittorrent.
 * Lidarr can communicate with qBittorrent.
-* Jellyseerr can communicate with Sonarr.
-* Jellyseerr can communicate with Radarr.
+* Seerr can communicate with Sonarr.
+* Seerr can communicate with Radarr.
 * Jellyfin can read the media directories.
 
 ### Persistence tests
@@ -875,7 +875,7 @@ The following test categories are mandatory:
 * Lidarr is operational.
 * Prowlarr is operational.
 * Bazarr is operational.
-* Jellyseerr is operational.
+* Seerr is operational.
 * Jellyfin is operational.
 * Recyclarr configuration is reproducible.
 * Media paths are consistently mapped.

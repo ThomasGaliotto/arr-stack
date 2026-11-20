@@ -57,6 +57,7 @@ KNOWN_IMAGE_PORTS: dict[str, set[int]] = {
     "bazarr": {6767},
     "jellyfin": {8096},
     "jellyseerr": {5055},
+    "seerr": {5055},
     "overseerr": {5055},
     "qbittorrent": {8080},
     "transmission": {9091},

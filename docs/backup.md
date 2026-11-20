@@ -10,7 +10,7 @@ The following configuration data is included in backups (media files are exclude
 - Sonarr/Radarr/Lidarr settings and metadata databases
 - Prowlarr indexer configurations  
 - Bazarr subtitle preferences
-- Jellyseerr queue and user settings
+- Seerr queue and user settings
 - Jellyfin library mappings and cache data
 - qBittorrent download list (optional)
 - Recyclarr quality profiles
