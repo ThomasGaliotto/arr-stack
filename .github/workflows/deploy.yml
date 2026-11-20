@@ -72,16 +72,22 @@ jobs:
             || fail "$HOST_DATA_ROOT is not mounted (NAS share)"
           [ -d "$HOST_DATA_ROOT/media" ] \
             || fail "$HOST_DATA_ROOT/media does not exist"
-          [ -d "$HOST_CONFIG_ROOT" ] && [ -w "$HOST_CONFIG_ROOT" ] \
-            || fail "$HOST_CONFIG_ROOT must exist and be writable by the runner user"
+          [ -d "$HOST_CONFIG_ROOT" ] \
+            || fail "$HOST_CONFIG_ROOT does not exist"
 
-      - name: Prepare local config directories
-        # Created by the runner user so that Docker does not create them as
-        # root (Recyclarr runs as HOST_UID and could not write to them).
+      - name: Check local config directories
+        # Created once by the operator, owned by HOST_UID, so that Docker
+        # never creates them as root (Recyclarr runs as HOST_UID). The
+        # runner itself does not need write access to them.
         run: |
+          missing=0
           for app in qbittorrent sonarr radarr lidarr prowlarr bazarr jellyseerr jellyfin recyclarr; do
-            mkdir -p "$HOST_CONFIG_ROOT/$app"
+            if [ ! -d "$HOST_CONFIG_ROOT/$app" ]; then
+              echo "::error::Missing $HOST_CONFIG_ROOT/$app"
+              missing=1
+            fi
           done
+          exit $missing
 
       - name: Pull images
         run: docker compose pull --quiet
