@@ -1,0 +1,66 @@
+name: ci
+
+# Static validation of the stack. Runs on GitHub-hosted runners only: it
+# never touches the homelab. Also reused by the deploy workflow as a gate.
+on:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate stack
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compose files resolve (defaults only, no .env)
+        run: |
+          for file in compose.yaml compose.dev.yaml compose.test.yaml; do
+            echo "::group::$file"
+            docker compose -f "$file" --env-file /dev/null config --quiet
+            echo "::endgroup::"
+          done
+
+      - name: Compose files resolve (with .env.example)
+        run: docker compose -f compose.yaml --env-file .env.example config --quiet
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Deterministic rules (ports, images, mounts, /config)
+        run: |
+          python -m pip install --quiet pyyaml==6.0.2
+          python ci/validate.py .
+
+      - name: Images exist in their registries
+        run: |
+          status=0
+          for image in $(docker compose -f compose.yaml --env-file /dev/null config --images); do
+            if docker manifest inspect "$image" > /dev/null 2>&1; then
+              echo "OK      $image"
+            else
+              echo "::error::Image not found: $image"
+              status=1
+            fi
+          done
+          exit $status
+
+      - name: Shell scripts parse
+        run: bash -n scripts/*.sh tests/smoke/*.sh
+
+      - name: No secret material tracked
+        run: |
+          if git ls-files | grep -E '(^|/)(\.env|.*\.key|.*\.pem)$'; then
+            echo "::error::Secret-like files are tracked by Git"
+            exit 1
+          fi
+          if git grep -nIE '^[[:space:]]*(PrivateKey|WIREGUARD_PRIVATE_KEY)[[:space:]]*[=:][[:space:]]*[A-Za-z0-9+/]{42,43}=' -- . ; then
+            echo "::error::A WireGuard private key appears to be committed"
+            exit 1
+          fi

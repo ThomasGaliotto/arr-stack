@@ -1,0 +1,100 @@
+name: deploy
+
+# Deploys main to the homelab through a self-hosted runner installed on the
+# Docker host. The runner only makes outbound connections to GitHub: no port
+# is opened on the home network.
+#
+# Approval: merging a PR into main is the go-ahead. If the "production"
+# environment has required reviewers, the deploy job additionally waits for
+# an explicit approval in GitHub before it starts.
+#
+# Configuration (GitHub > Settings):
+# - Secret  WIREGUARD_PRIVATE_KEY   (environment "production", or repository)
+# - Optional variables: HOST_DATA_ROOT, HOST_CONFIG_ROOT, HOST_BIND_IP,
+#   HOST_UID, HOST_GID, HOST_TIMEZONE, VPN_COUNTRY, VPN_PORT_FORWARDING
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".agent/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never run two deployments at the same time, never cancel one midway.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Deploy to homelab
+    needs: validate
+    runs-on: [self-hosted, linux, arr]
+    environment: production
+    timeout-minutes: 30
+    env:
+      COMPOSE_PROJECT_NAME: arr-stack
+      COMPOSE_FILE: compose.yaml
+      HOST_DATA_ROOT: ${{ vars.HOST_DATA_ROOT || '/arr-data' }}
+      HOST_CONFIG_ROOT: ${{ vars.HOST_CONFIG_ROOT || '/srv/media-stack/config' }}
+      HOST_BIND_IP: ${{ vars.HOST_BIND_IP || '0.0.0.0' }}
+      HOST_UID: ${{ vars.HOST_UID || '1000' }}
+      HOST_GID: ${{ vars.HOST_GID || '1000' }}
+      HOST_TIMEZONE: ${{ vars.HOST_TIMEZONE || 'Europe/Brussels' }}
+      VPN_COUNTRY: ${{ vars.VPN_COUNTRY || 'Netherlands' }}
+      VPN_PORT_FORWARDING: ${{ vars.VPN_PORT_FORWARDING || 'off' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check prerequisites
+        env:
+          WIREGUARD_PRIVATE_KEY: ${{ secrets.WIREGUARD_PRIVATE_KEY }}
+        run: |
+          fail() { echo "::error::$1"; exit 1; }
+
+          [ -n "$WIREGUARD_PRIVATE_KEY" ] \
+            || fail "Secret WIREGUARD_PRIVATE_KEY is missing or empty"
+          [[ "$WIREGUARD_PRIVATE_KEY" =~ ^[A-Za-z0-9+/]{43}=$ ]] \
+            || fail "WIREGUARD_PRIVATE_KEY does not look like a WireGuard key (44 base64 chars)"
+
+          docker info > /dev/null 2>&1 \
+            || fail "The runner user cannot use Docker"
+          [ -c /dev/net/tun ] \
+            || fail "/dev/net/tun is missing on the host"
+          mountpoint -q "$HOST_DATA_ROOT" \
+            || fail "$HOST_DATA_ROOT is not mounted (NAS share)"
+          [ -d "$HOST_DATA_ROOT/media" ] \
+            || fail "$HOST_DATA_ROOT/media does not exist"
+          [ -d "$HOST_CONFIG_ROOT" ] && [ -w "$HOST_CONFIG_ROOT" ] \
+            || fail "$HOST_CONFIG_ROOT must exist and be writable by the runner user"
+
+      - name: Prepare local config directories
+        # Created by the runner user so that Docker does not create them as
+        # root (Recyclarr runs as HOST_UID and could not write to them).
+        run: |
+          for app in qbittorrent sonarr radarr lidarr prowlarr bazarr jellyseerr jellyfin recyclarr; do
+            mkdir -p "$HOST_CONFIG_ROOT/$app"
+          done
+
+      - name: Pull images
+        run: docker compose pull --quiet
+
+      - name: Start stack and wait until healthy
+        env:
+          WIREGUARD_PRIVATE_KEY: ${{ secrets.WIREGUARD_PRIVATE_KEY }}
+        run: docker compose up --detach --remove-orphans --wait --wait-timeout 300
+
+      - name: Status
+        if: always()
+        run: docker compose ps --all
+
+      - name: Logs of failing deployment
+        if: failure()
+        run: docker compose logs --no-color --tail 80

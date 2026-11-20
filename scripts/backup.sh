@@ -152,12 +152,8 @@ cleanup_old_backups() {
         log_warn "Removing expired backup: $(basename "$old_backup")"
         
         if [ ! "$DRY_RUN" = true ]; then
-            rm -f "${old_backup}" && \
-                sha256sum "${old_backup}.sha256" 2>/dev/null | awk '{print \$1}' > /dev/null || {
-                
-                    # Remove orphaned checksum file if backup was deleted but checksum still exists
-                    
-                }
+            # Remove the expired backup and its checksum file
+            rm -f "${old_backup}" "${old_backup}.sha256"
             
             ((deleted_count++))
         fi
