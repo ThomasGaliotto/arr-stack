@@ -1,0 +1,77 @@
+# ARR Media Stack - Git Ignore File
+# =============================================================================
+# This file ensures that no secrets, logs, or user data are committed to Git.
+# Secrets must be injected at runtime by the orchestrator.
+
+# -----------------------------------------------------------------------------
+# SECRETS AND CREDENTIALS (NEVER COMMIT)
+# -----------------------------------------------------------------------------
+secrets/
+*.key
+*.pem
+.env
+!.env.example
+.secrets/
+
+# Note: the WireGuard key is injected at deploy time (WIREGUARD_PRIVATE_KEY), never stored here
+# Never commit actual VPN keys to Git repository
+
+# -----------------------------------------------------------------------------
+# LOG FILES (SENSITIVE DATA MAY BE INCLUDED)
+# -----------------------------------------------------------------------------
+logs/
+*.log
+docker-compose.log
+journalctl*
+
+# -----------------------------------------------------------------------------
+# USER DATA AND MEDIA (NEVER COMMIT)
+# -----------------------------------------------------------------------------
+data/media/*
+!data/media/.gitkeep
+!.env.example
+.gitkeep
+torrents/incomplete/*
+!torrents/incomplete/.gitkeep
+
+# -----------------------------------------------------------------------------
+# CACHE AND TEMPORARY FILES
+# -----------------------------------------------------------------------------
+*.cache
+.cache/
+tmp/
+temp/
+node_modules/
+__pycache__/
+
+# ---------------------------------------------------------------- -------------
+# DOCKER STATE (OPTIONAL - may be useful for debugging)
+# ---------------------------------------------------------------- -------------
+docker-compose.override.yml
+.docker/
+.volumes/*
+!volumes/.gitkeep
+
+# -----------------------------------------------------------------------------
+# IDE AND EDITOR FILES
+# -----------------------------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ---------------------------------------------------------------- -------------
+# BUILD ARTIFACTS (OPTIONAL)
+# ---------------------------------------------------------------- -------------
+dist/
+build/
+coverage/
+.npm/
+.pnpm-store/
+
+# -----------------------------------------------------------------------------
+# AGENT WORKFLOW DRAFTS (rejected attempts, kept locally for debugging only)
+# -----------------------------------------------------------------------------
+.agent/*.failed.*

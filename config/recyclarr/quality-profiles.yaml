@@ -1,0 +1,51 @@
+# Recyclarr Quality Profiles - Consolidated Configuration
+# =============================================================================
+# This YAML file contains consolidated quality profile definitions for all ARR services.
+# Recyclarr reads this configuration and applies it declaratively without API calls during startup.
+
+profiles:
+  sonarr:
+    instance_name: sonarr
+    profiles:
+      default:
+        name: Default TV Profile
+        minimum_quality: Torrent
+        preferred_qualities:
+          - WEBDL-1080p
+          - BluRay-1080p
+          - HDTV-720p
+          - TVPACK-1080p
+      hdtv:
+        name: HD Profile
+        minimum_quality: Bluray
+        preferred_qualities:
+          - WEBDL-1080p
+          - BluRay-1080p
+
+  radarr:
+    instance_name: radarr
+    profiles:
+      default:
+        name: Default Movie Profile
+        minimum_quality: Torrent
+        preferred_qualities:
+          - WEBDL-1080p
+          - BluRay-2160p
+          - HDTV-720p
+          - BDRip-1080p
+      hdtv:
+        name: HD Profile
+        minimum_quality: Bluray
+        preferred_qualities:
+          - WEBDL-1080p
+          - BluRay-2160p
+
+  lidarr:
+    instance_name: lidarr
+    profiles:
+      default:
+        name: Default Music Profile
+        minimum_quality: Lossless FLAC
+        preferred_qualities:
+          - Lossless FLAC-24bit/192kHz
+          - V0 MP3-320kbps

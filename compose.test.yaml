@@ -1,0 +1,194 @@
+# ARR Media Stack - Test Environment Configuration
+# =============================================================================
+# This file provides test-specific overrides for automated testing.
+# Use with: docker compose --profile test up -d
+# =============================================================================
+
+services:
+  # Gluetun (test configuration)
+  gluetun_test:
+    image: ghcr.io/qdm12/gluetun:${GLUETUN_VERSION:-v3}
+    container_name: gluetun-test
+    profiles:
+      - test
+    networks:
+      - download_net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      # Test configuration with mock VPN settings
+      - COUNTRY=${VPN_COUNTRY:-Netherlands}
+      - OPEN_VPN_CONNECTION=false  # Skip actual connection for tests
+      - WIREGUARD_ENABLED=true
+      - DNS=1.1.1.1,8.8.8.8
+
+  # qBittorrent (test configuration)
+  qbittorrent_test:
+    image: lscr.io/linuxserver/qbittorrent:${QBITTORRENT_VERSION:-latest}
+    container_name: qbittorrent-test
+    profiles:
+      - test
+    networks:
+      - download_net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - PUID=${HOST_UID:-1000}
+      - PGID=${HOST_GID:-1000}
+      - TZ=${HOST_TIMEZONE:-Europe/Brussels}
+
+  # Sonarr (test configuration)
+  sonarr_test:
+    image: lscr.io/linuxserver/sonarr:${SONARR_VERSION:-latest}
+    container_name: sonarr-test
+    profiles:
+      - test
+    networks:
+      - app_net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - PUID=${HOST_UID:-1000}
+      - PGID=${HOST_GID:-1000}
+      - TZ=${HOST_TIMEZONE:-Europe/Brussels}
+
+  # Radarr (test configuration)
+  radarr_test:
+    image: lscr.io/linuxserver/radarr:${RADARR_VERSION:-latest}
+    container_name: radarr-test
+    profiles:
+      - test
+    networks:
+      - app_net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  # Lidarr (test configuration)
+  lidarr_test:
+    image: lscr.io/linuxserver/lidarr:${LIDARR_VERSION:-latest}
+    container_name: lidarr-test
+    profiles:
+      - test
+    networks:
+      - app_net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  # Prowlarr (test configuration)
+  prowlarr_test:
+    image: lscr.io/linuxserver/prowlarr:${PROWLARR_VERSION:-latest}
+    container_name: prowlarr-test
+    profiles:
+      - test
+    networks:
+      - app_net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  # Bazarr (test configuration)
+  bazarr_test:
+    image: lscr.io/linuxserver/bazarr:${BAZARR_VERSION:-latest}
+    container_name: bazarr-test
+    profiles:
+      - test
+    networks:
+      - app_net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  # Jellyseerr (test configuration)
+  jellyseerr_test:
+    image: docker.io/fallenbagel/jellyseerr:${JELLYSEERR_VERSION:-latest}
+    container_name: jellyseerr-test
+    profiles:
+      - test
+    networks:
+      - app_net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  # Jellyfin (test configuration)
+  jellyfin_test:
+    image: lscr.io/linuxserver/jellyfin:${JELLYFIN_VERSION:-latest}
+    container_name: jellyfin-test
+    profiles:
+      - test
+    networks:
+      - media_net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  # Recyclarr (test configuration)
+  recyclarr_test:
+    image: ghcr.io/recyclarr/recyclarr:${RECYCLARR_VERSION:-8}
+    container_name: recyclarr-test
+    profiles:
+      - test
+    networks:
+      - app_net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+# =============================================================================
+# NETWORKS (Test environment)
+# Reuse same network names as main compose.yaml for compatibility
+# =============================================================================
+
+networks:
+  download_net:
+    name: arr-stack-download-net-test
+    driver: bridge
+  
+  app_net:
+    name: arr-stack-app-net-test
+    driver: bridge
+    internal: false
+  
+  media_net:
+    name: arr-stack-media-net-test
+    driver: bridge
+
+# =============================================================================
+# VOLUMES (Test environment)
+# =============================================================================
+
+volumes:
+  gluetun_config_test:
+  
+  qbittorrent_config_test:
+  
+  sonarr_config_test:
+  
+  radarr_config_test:
+  
+  lidarr_config_test:
+  
+  prowlarr_config_test:
+  
+  bazarr_config_test:
+  
+  jellyseerr_config_test:
+  
+  jellyfin_config_test:
+  
+  recyclarr_config_test:

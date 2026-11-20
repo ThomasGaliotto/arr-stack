@@ -1,0 +1,11 @@
+# Prowlarr Configuration - Declarative Settings
+# =============================================================================
+# This directory contains declarative configurations for Prowlarr indexer management.
+# The compose.yaml mounts these to /config inside the container.
+
+settings:
+  # Indexer configuration is managed via Prowlarr's web UI or API calls during startup
+  # Quality profile references can be stored here
+  
+  # Example indexer definitions (these would typically come from user input)
+  indexers: []  # Empty by default - populated at runtime

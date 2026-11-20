@@ -1,0 +1,25 @@
+# Gluetun Configuration - WireGuard Settings for ProtonVPN
+# =============================================================================
+# This directory contains declarative configurations for Gluetun VPN gateway.
+# The compose.yaml mounts these to /gluetun/config inside the container.
+
+settings:
+  provider: protonvpn
+  protocol: wireguard
+  country: Netherlands
+  port_forwarding: true
+  
+wireguard_config_path: "/etc/wireguard"
+private_key_file: "/etc/wireguard/private.key"
+public_ip_check_url: "https://api.ipify.org?format=json"
+
+dns_servers:
+  - 1.1.1.1
+  - 8.8.8.8
+  
+block_outside_vpn_networks: true
+open_vpn_connection: true
+wireguard_enabled: true
+
+# Note: The actual WireGuard configuration file is injected at runtime via secrets
+# This settings.yaml provides declarative defaults that can be overridden per deployment

@@ -1,0 +1,12 @@
+# Jellyseerr Configuration - Declarative Settings
+# =============================================================================
+# This directory contains declarative configurations for Jellyseerr user request interface.
+# The compose.yaml mounts these to /config inside the container.
+
+settings:
+  # Integration with ARR services (internal network only)
+  sonarr_api_url: http://sonarr:8989/api/v3/series
+  radarr_api_url: http://radarr:7878/api/v3/movies
+  
+  # Subtitle language preferences for requests
+  subtitle_languages: en,es,it,fr,de,zh-cn,jp-ja,korean

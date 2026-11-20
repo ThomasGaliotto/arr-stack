@@ -1,0 +1,304 @@
+# ARR Media Stack - Core Services Configuration
+# This compose.yaml defines all mandatory services for media automation.
+# Optional services should be added via profiles (see compose.dev.yaml).
+#
+# Storage layout:
+# - Application state (SQLite databases, settings) lives on local disk under
+#   HOST_CONFIG_ROOT, never on NFS (SQLite locking over NFS is unreliable).
+# - Media and downloads live on the NAS under HOST_DATA_ROOT, mounted as a
+#   single /data tree so the ARR apps can hardlink/move instead of copying.
+#
+# Web UIs are published on HOST_BIND_IP (all interfaces by default).
+
+# Shared settings for linuxserver.io images. Their s6 init needs these
+# capabilities to fix ownership and drop to PUID/PGID; everything else is
+# dropped.
+x-linuxserver: &linuxserver
+  restart: unless-stopped
+  cap_drop:
+    - ALL
+  cap_add:
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
+  security_opt:
+    - no-new-privileges:true
+
+x-linuxserver-env: &linuxserver-env
+  PUID: ${HOST_UID:-1000}
+  PGID: ${HOST_GID:-1000}
+  TZ: ${HOST_TIMEZONE:-Europe/Brussels}
+
+x-healthcheck: &healthcheck
+  interval: 30s
+  timeout: 10s
+  retries: 5
+  start_period: 60s
+
+services:
+  # =============================================================================
+  # VPN GATEWAY (Gluetun)
+  # All qBittorrent traffic goes through this container. Gluetun's firewall
+  # blocks any traffic outside the VPN tunnel (kill switch built in).
+  # The WireGuard private key is read from a Docker secret, never from env.
+  # =============================================================================
+
+  gluetun:
+    image: ghcr.io/qdm12/gluetun:${GLUETUN_VERSION:-v3}
+    container_name: gluetun
+    restart: unless-stopped
+    # Required to create the WireGuard interface and the firewall rules.
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - download_net
+      # Lets Sonarr/Radarr/Lidarr reach qBittorrent at http://gluetun:8080
+      - app_net
+    ports:
+      # qBittorrent Web UI (qBittorrent shares Gluetun's network stack)
+      - "${HOST_BIND_IP:-0.0.0.0}:${QBITTORRENT_WEBUI_PORT:-8080}:8080"
+    environment:
+      VPN_SERVICE_PROVIDER: ${VPN_PROVIDER:-protonvpn}
+      VPN_TYPE: ${VPN_TYPE:-wireguard}
+      SERVER_COUNTRIES: ${VPN_COUNTRY:-Netherlands}
+      VPN_PORT_FORWARDING: ${VPN_PORT_FORWARDING:-off}
+      WIREGUARD_PRIVATE_KEY_SECRETFILE: /run/secrets/wireguard_private_key
+      TZ: ${HOST_TIMEZONE:-Europe/Brussels}
+    secrets:
+      - wireguard_private_key
+    # The image ships its own healthcheck (VPN connectivity).
+
+  # =============================================================================
+  # TORRENT CLIENT (qBittorrent)
+  # Uses Gluetun's network namespace: it has no network of its own and cannot
+  # reach the internet outside the VPN tunnel.
+  # Configure the download path in the Web UI: /data/media/downloads
+  # =============================================================================
+
+  qbittorrent:
+    <<: *linuxserver
+    image: lscr.io/linuxserver/qbittorrent:${QBITTORRENT_VERSION:-latest}
+    container_name: qbittorrent
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    environment:
+      <<: *linuxserver-env
+      WEBUI_PORT: 8080
+    volumes:
+      - ${HOST_CONFIG_ROOT:-/srv/media-stack/config}/qbittorrent:/config
+      - ${HOST_DATA_ROOT:-/arr-data}:/data
+
+  # =============================================================================
+  # TV SERIES MANAGEMENT (Sonarr) - root folder: /data/media/tv
+  # =============================================================================
+
+  sonarr:
+    <<: *linuxserver
+    image: lscr.io/linuxserver/sonarr:${SONARR_VERSION:-latest}
+    container_name: sonarr
+    networks:
+      - app_net
+    ports:
+      - "${HOST_BIND_IP:-0.0.0.0}:8989:8989"
+    environment:
+      <<: *linuxserver-env
+    volumes:
+      - ${HOST_CONFIG_ROOT:-/srv/media-stack/config}/sonarr:/config
+      - ${HOST_DATA_ROOT:-/arr-data}:/data
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8989/ping"]
+
+  # =============================================================================
+  # MOVIE MANAGEMENT (Radarr) - root folder: /data/media/movies
+  # =============================================================================
+
+  radarr:
+    <<: *linuxserver
+    image: lscr.io/linuxserver/radarr:${RADARR_VERSION:-latest}
+    container_name: radarr
+    networks:
+      - app_net
+    ports:
+      - "${HOST_BIND_IP:-0.0.0.0}:7878:7878"
+    environment:
+      <<: *linuxserver-env
+    volumes:
+      - ${HOST_CONFIG_ROOT:-/srv/media-stack/config}/radarr:/config
+      - ${HOST_DATA_ROOT:-/arr-data}:/data
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:7878/ping"]
+
+  # =============================================================================
+  # MUSIC MANAGEMENT (Lidarr) - root folder: /data/media/music
+  # =============================================================================
+
+  lidarr:
+    <<: *linuxserver
+    image: lscr.io/linuxserver/lidarr:${LIDARR_VERSION:-latest}
+    container_name: lidarr
+    networks:
+      - app_net
+    ports:
+      - "${HOST_BIND_IP:-0.0.0.0}:8686:8686"
+    environment:
+      <<: *linuxserver-env
+    volumes:
+      - ${HOST_CONFIG_ROOT:-/srv/media-stack/config}/lidarr:/config
+      - ${HOST_DATA_ROOT:-/arr-data}:/data
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8686/ping"]
+
+  # =============================================================================
+  # INDEXER MANAGEMENT (Prowlarr)
+  # =============================================================================
+
+  prowlarr:
+    <<: *linuxserver
+    image: lscr.io/linuxserver/prowlarr:${PROWLARR_VERSION:-latest}
+    container_name: prowlarr
+    networks:
+      - app_net
+    ports:
+      - "${HOST_BIND_IP:-0.0.0.0}:9696:9696"
+    environment:
+      <<: *linuxserver-env
+    volumes:
+      - ${HOST_CONFIG_ROOT:-/srv/media-stack/config}/prowlarr:/config
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9696/ping"]
+
+  # =============================================================================
+  # SUBTITLE MANAGEMENT (Bazarr)
+  # =============================================================================
+
+  bazarr:
+    <<: *linuxserver
+    image: lscr.io/linuxserver/bazarr:${BAZARR_VERSION:-latest}
+    container_name: bazarr
+    networks:
+      - app_net
+    ports:
+      - "${HOST_BIND_IP:-0.0.0.0}:6767:6767"
+    environment:
+      <<: *linuxserver-env
+    volumes:
+      - ${HOST_CONFIG_ROOT:-/srv/media-stack/config}/bazarr:/config
+      - ${HOST_DATA_ROOT:-/arr-data}:/data
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:6767"]
+
+  # =============================================================================
+  # USER REQUEST INTERFACE (Jellyseerr)
+  # Talks to Sonarr/Radarr on app_net and to Jellyfin on media_net.
+  # (linuxserver.io does not publish a Jellyseerr image; this is the official
+  # upstream image, which stores its state in /app/config.)
+  # =============================================================================
+
+  jellyseerr:
+    image: docker.io/fallenbagel/jellyseerr:${JELLYSEERR_VERSION:-latest}
+    container_name: jellyseerr
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - app_net
+      - media_net
+    ports:
+      - "${HOST_BIND_IP:-0.0.0.0}:5055:5055"
+    environment:
+      TZ: ${HOST_TIMEZONE:-Europe/Brussels}
+    volumes:
+      - ${HOST_CONFIG_ROOT:-/srv/media-stack/config}/jellyseerr:/app/config
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5055/api/v1/status"]
+
+  # =============================================================================
+  # MEDIA SERVER (Jellyfin)
+  # Read-only access to the library; hardware transcoding disabled by default.
+  # =============================================================================
+
+  jellyfin:
+    <<: *linuxserver
+    image: lscr.io/linuxserver/jellyfin:${JELLYFIN_VERSION:-latest}
+    container_name: jellyfin
+    networks:
+      - media_net
+    ports:
+      - "${HOST_BIND_IP:-0.0.0.0}:8096:8096"
+    environment:
+      <<: *linuxserver-env
+    volumes:
+      - ${HOST_CONFIG_ROOT:-/srv/media-stack/config}/jellyfin:/config
+      - ${HOST_DATA_ROOT:-/arr-data}/media:/data/media:ro
+
+  # =============================================================================
+  # QUALITY PROFILE MANAGEMENT (Recyclarr)
+  # Syncs quality profiles to Sonarr/Radarr from /config/recyclarr.yml.
+  # Only major version tags are published (no "latest").
+  # =============================================================================
+
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr:${RECYCLARR_VERSION:-8}
+    container_name: recyclarr
+    restart: unless-stopped
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - app_net
+    environment:
+      TZ: ${HOST_TIMEZONE:-Europe/Brussels}
+    volumes:
+      - ${HOST_CONFIG_ROOT:-/srv/media-stack/config}/recyclarr:/config
+
+# =============================================================================
+# NETWORKS (Logical Segmentation)
+# =============================================================================
+
+networks:
+  # Gluetun egress only; qBittorrent lives inside Gluetun's namespace.
+  download_net:
+    name: arr-stack-download-net
+    driver: bridge
+
+  # ARR applications, indexer and request interface.
+  app_net:
+    name: arr-stack-app-net
+    driver: bridge
+
+  # Jellyfin and Jellyseerr. Not internal: Jellyfin publishes its UI and
+  # fetches metadata.
+  media_net:
+    name: arr-stack-media-net
+    driver: bridge
+
+# =============================================================================
+# SECRETS
+# Read from the WIREGUARD_PRIVATE_KEY environment variable of the shell that
+# runs `docker compose up` (the deployment pipeline injects it from a GitHub
+# secret). Compose copies it into the container at /run/secrets/...: the key
+# is never written to the host disk and does not appear in `docker inspect`.
+# Manual run: WIREGUARD_PRIVATE_KEY='...' docker compose up -d
+# =============================================================================
+
+secrets:
+  wireguard_private_key:
+    environment: WIREGUARD_PRIVATE_KEY

@@ -1,0 +1,21 @@
+# qBittorrent Configuration - Declarative Settings
+# =============================================================================
+# This directory contains declarative configurations for qBittorrent client.
+# The compose.yaml mounts these to /config inside the container.
+
+settings:
+  listen_port: 6789
+  web_ui_port: 8081
+  
+  # Download paths (matches data/torrents structure)
+  download_path_incomplete: "/downloads/incomplete"
+  
+  # Enable DHT, PEX for better torrent discovery
+  dht_enabled: true
+  pex_enabled: true
+    
+  # Rate limiting and bandwidth control can be configured here via environment vars
+  
+  # WebUI authentication (use Docker secrets or runtime injection)
+  web_ui_username: ""
+  web_ui_password: ""

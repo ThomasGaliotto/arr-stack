@@ -1,0 +1,16 @@
+# Radarr Configuration - Declarative Settings
+# =============================================================================
+# This directory contains declarative configurations for Radarr movie management.
+# The compose.yaml mounts these to /config inside the container.
+
+settings:
+  # Download client integration (qBittorrent)
+  download_client: qbittorrent
+  download_client_id: "1"
+  download_client_port: "6789"
+  
+  # Media library path
+  media_library_path: "/movies"
+  
+  # Quality profile reference (from recyclarr/radarr.yaml)
+  quality_profile_file: "../recyclarr/quality-profiles.yaml"

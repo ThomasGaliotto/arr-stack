@@ -1,0 +1,27 @@
+# Radarr Quality Profiles - Declarative Configuration
+# =============================================================================
+# Recyclarr will read this file and apply settings to the running container.
+
+instance: radarr
+quality_profiles:
+  default:
+    name: Default Profile
+    minimum_quality: Torrent
+    preferred_qualities:
+      - WEBDL-1080p
+      - BluRay-2160p
+      - HDTV-720p
+      - BDRip-1080p
+  hdtv:
+    name: HD Profile
+    minimum_quality: Bluray
+    preferred_qualities:
+      - WEBDL-1080p
+      - BluRay-2160p
+
+download_clients:
+  qbittorrent:
+    enabled: true
+    host: http://qbittorrent:6789/api/v2
+    username: ""
+    password: ""

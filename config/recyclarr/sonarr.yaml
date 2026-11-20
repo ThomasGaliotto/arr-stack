@@ -1,0 +1,29 @@
+# Sonarr Quality Profiles - Declarative Configuration
+# =============================================================================
+# Recyclarr will read this file and apply settings to the running container.
+# This enables reproducible quality profile management without API calls during startup.
+
+instance: sonarr
+quality_profiles:
+  default:
+    name: Default Profile
+    minimum_quality: Torrent
+    preferred_qualities:
+      - WEBDL-1080p
+      - BluRay-1080p
+      - HDTV-720p
+      - TVPACK-1080p
+  hdtv:
+    name: HD Profile
+    minimum_quality: Bluray
+    preferred_qualities:
+      - WEBDL-1080p
+      - BluRay-1080p
+      - HDTV-720p
+
+download_clients:
+  qbittorrent:
+    enabled: true
+    host: http://qbittorrent:6789/api/v2
+    username: ""
+    password: ""

@@ -1,0 +1,20 @@
+# Lidarr Quality Profiles - Declarative Configuration
+# =============================================================================
+# Recyclarr will read this file and apply settings to the running container.
+
+instance: lidarr
+quality_profiles:
+  default:
+    name: Default Profile
+    minimum_quality: Lossless FLAC
+    preferred_qualities:
+      - Lossless FLAC-24bit/192kHz
+      - V0 MP3-320kbps
+      - High Quality AAC
+
+download_clients:
+  qbittorrent:
+    enabled: true
+    host: http://qbittorrent:6789/api/v2
+    username: ""
+    password: ""

@@ -1,0 +1,134 @@
+# ARR Media Stack - Development Configuration Overrides
+# =============================================================================
+# This file provides development-specific overrides for optional services,
+# debugging ports, and monitoring tools. Use with: docker compose --profile dev up -d
+# =============================================================================
+
+services:
+  # Optional: Readarr (optional service)
+  readarr_dev:
+    image: lscr.io/linuxserver/readarr:${READARR_VERSION:-latest}
+    container_name: readarr-dev
+    profiles:
+      - optional
+    networks:
+      - app_net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - PUID=${HOST_UID:-1000}
+      - PGID=${HOST_GID:-1000}
+      - TZ=${HOST_TIMEZONE:-Europe/Brussels}
+    volumes:
+      - readarr_config_dev:/config
+
+  # Optional: Tdarr (optional service)
+  tdarr_dev:
+    image: lscr.io/linuxserver/tdarr:${TDARR_VERSION:-latest}
+    container_name: tdarr-dev
+    profiles:
+      - optional
+    networks:
+      - app_net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - PUID=${HOST_UID:-1000}
+      - PGID=${HOST_GID:-1000}
+      - TZ=${HOST_TIMEZONE:-Europe/Brussels}
+    volumes:
+      - tdarr_config_dev:/config
+
+  # Optional: Homepage (optional service)
+  homepage_dev:
+    image: ghcr.io/linuxserver/homepage:${HOMEPAGE_VERSION:-latest}
+    container_name: homepage-dev
+    profiles:
+      - optional
+    networks:
+      - app_net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - PUID=${HOST_UID:-1000}
+      - PGID=${HOST_GID:-1000}
+      - TZ=${HOST_TIMEZONE:-Europe/Brussels}
+
+  # Optional: Prometheus (monitoring)
+  prometheus_dev:
+    image: prom/prometheus:${PROMETHEUS_VERSION:-v2.48.0}
+    container_name: prometheus-dev
+    profiles:
+      - optional
+    networks:
+      - app_net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - prometheus_config_dev:/prometheus
+
+  # Optional: Grafana (monitoring)
+  grafana_dev:
+    image: grafana/grafana:${GRAFANA_VERSION:-latest}
+    container_name: grafana-dev
+    profiles:
+      - optional
+    networks:
+      - app_net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - PUID=${HOST_UID:-1000}
+      - PGID=${HOST_GID:-1000}
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=<SET_AT_RUNTIME>
+
+  # Optional: Loki (logging)
+  loki_dev:
+    image: grafana/loki:${LOKI_VERSION:-v2.9.3}
+    container_name: loki-dev
+    profiles:
+      - optional
+    networks:
+      - app_net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  # Optional: Autobrr (optional indexer service)
+  autobrr_dev:
+    image: ghcr.io/autobrr/autobrr:${AUTOBRR_VERSION:-latest}
+    container_name: autobrr-dev
+    profiles:
+      - optional
+    networks:
+      - app_net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+# =============================================================================
+# VOLUMES (Development-specific)
+# =============================================================================
+
+volumes:
+  readarr_config_dev:
+    external: false
+  
+  tdarr_config_dev:
+    external: false
+  
+  prometheus_config_dev:
+    external: false

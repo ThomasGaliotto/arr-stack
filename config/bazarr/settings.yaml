@@ -1,0 +1,12 @@
+# Bazarr Configuration - Declarative Settings
+# =============================================================================
+# This directory contains declarative configurations for Bazarr subtitle management.
+# The compose.yaml mounts these to /config inside the container.
+
+settings:
+  # Subtitle language preferences (comma-separated)
+  languages: en,es,it,fr,de,zh-cn,jp-ja,korean
+  
+  # Media library paths (shared with Sonarr/Radarr for subtitle matching)
+  tv_library_path: "/tv"
+  movie_library_path: "/movies"

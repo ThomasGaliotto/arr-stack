@@ -1,0 +1,15 @@
+# Jellyfin Configuration - Declarative Settings
+# =============================================================================
+# This directory contains declarative configurations for Jellyfin media server.
+# The compose.yaml mounts these to /config inside the container.
+
+settings:
+  # Media library paths (bind-mounted from host)
+  movies_path: "/media/Movies"
+  tv_shows_path: "/media/TV Shows"
+  music_path: "/media/Music"
+  
+  # Hardware transcoding is optional and disabled by default for CPU-only hosts
+  enabled_transcoders: none
+  
+  # Enable hardware acceleration if GPU available (set to 'qsv,nvenc' on supported systems)

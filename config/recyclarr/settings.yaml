@@ -1,0 +1,11 @@
+# Recyclarr Configuration - Declarative Settings
+# =============================================================================
+# This directory contains declarative configurations for Recyclarr quality profile management.
+# The compose.yaml mounts these to /config inside the container.
+
+settings:
+  # Quality profiles are read from config/recyclarr/*.yaml files
+  
+  sonarr_config_file: "../sonarr/quality-profiles.yaml"
+  radarr_config_file: "../radarr/quality-profiles.yaml"
+  lidarr_config_file: "../lidarr/quality-profiles.yaml"
