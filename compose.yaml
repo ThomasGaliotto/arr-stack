@@ -68,11 +68,23 @@ services:
       VPN_TYPE: ${VPN_TYPE:-wireguard}
       SERVER_COUNTRIES: ${VPN_COUNTRY:-Netherlands}
       VPN_PORT_FORWARDING: ${VPN_PORT_FORWARDING:-off}
+      # "on" with a free ProtonVPN account: only free servers are tried.
+      FREE_ONLY: ${VPN_FREE_ONLY:-off}
       WIREGUARD_PRIVATE_KEY_SECRETFILE: /run/secrets/wireguard_private_key
       TZ: ${HOST_TIMEZONE:-Europe/Brussels}
     secrets:
       - wireguard_private_key
-    # The image ships its own healthcheck (VPN connectivity).
+    # Same check as the image, with a longer start period: Gluetun may try
+    # several servers before the tunnel passes traffic, and failures during
+    # the start period must not mark it unhealthy (qBittorrent and
+    # `docker compose up --wait` depend on it).
+    healthcheck:
+      test: ["CMD-SHELL", "/gluetun-entrypoint healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 180s
+      start_interval: 5s
 
   # =============================================================================
   # TORRENT CLIENT (qBittorrent)
@@ -211,6 +223,9 @@ services:
     image: docker.io/fallenbagel/jellyseerr:${JELLYSEERR_VERSION:-latest}
     container_name: jellyseerr
     restart: unless-stopped
+    # Runs as the owner of its config directory: with all capabilities
+    # dropped, root could not write to a directory it does not own.
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     cap_drop:
       - ALL
     security_opt:

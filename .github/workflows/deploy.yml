@@ -11,7 +11,8 @@ name: deploy
 # Configuration (GitHub > Settings):
 # - Secret  WIREGUARD_PRIVATE_KEY   (environment "production", or repository)
 # - Optional variables: HOST_DATA_ROOT, HOST_CONFIG_ROOT, HOST_BIND_IP,
-#   HOST_UID, HOST_GID, HOST_TIMEZONE, VPN_COUNTRY, VPN_PORT_FORWARDING
+#   HOST_UID, HOST_GID, HOST_TIMEZONE, VPN_COUNTRY, VPN_PORT_FORWARDING,
+#   VPN_FREE_ONLY
 on:
   push:
     branches: [main]
@@ -50,6 +51,7 @@ jobs:
       HOST_TIMEZONE: ${{ vars.HOST_TIMEZONE || 'Europe/Brussels' }}
       VPN_COUNTRY: ${{ vars.VPN_COUNTRY || 'Netherlands' }}
       VPN_PORT_FORWARDING: ${{ vars.VPN_PORT_FORWARDING || 'off' }}
+      VPN_FREE_ONLY: ${{ vars.VPN_FREE_ONLY || 'off' }}
     steps:
       - uses: actions/checkout@v4
 
