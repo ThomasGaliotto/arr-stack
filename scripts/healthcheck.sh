@@ -161,7 +161,7 @@ run_full_isolation_test() {
     # Test 2: Verify ARR services are only on app_net
     log_info "Test 2: Checking ARR service network membership..."
     
-    local arr_services=("sonarr" "radarr" "lidarr" "prowlarr" "bazarr" "jellyseerr" "recyclarr")
+    local arr_services=("sonarr" "radarr" "lidarr" "prowlarr" "bazarr" "seerr" "recyclarr")
     
     for svc in "${arr_services[@]}"; do
         if command -v docker &> /dev/null; then
@@ -172,14 +172,14 @@ run_full_isolation_test() {
                 log_info "PASS: $svc is on app_net"
                 ((tests_passed++))
                 
-                # Jellyseerr and bazarr should NOT be on download_net or media_net for security
+                # Seerr and bazarr should NOT be on download_net or media_net for security
                 if [[ "$svc" != "jellyfin" ]] && [[ "$svc_networks" == *"media_net"* ]]; then
                     log_warn "WARN: $svc is connected to media_net (may need review)"
                 fi
                 
             else
-                # Jellyseerr and jellyfin are exceptions - they don't strictly require app_net for all operations
-                if [[ "$svc" != "jellyseerr" ]] && [[ "$svc" != "bazarr" ]]; then
+                # Seerr and jellyfin are exceptions - they don't strictly require app_net for all operations
+                if [[ "$svc" != "seerr" ]] && [[ "$svc" != "bazarr" ]]; then
                     log_error "FAIL: $svc should be on app_net but isn't!"
                     ((tests_failed++))
                 else

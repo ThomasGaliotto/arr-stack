@@ -19,7 +19,7 @@ The stack uses three isolated bridge networks to enforce security boundaries:
 ### 2. app_net (`arr-stack-app-net`)
 
 **Purpose**: ARR services communication layer  
-**Services**: Sonarr, Radarr, Lidarr, Prowlarr, Bazarr, Jellyseerr, Recyclarr  
+**Services**: Sonarr, Radarr, Lidarr, Prowlarr, Bazarr, Seerr, Recyclarr  
 **Characteristics**:
 - Internal network for service-to-service API calls
 - Not exposed to public internet by default
@@ -57,7 +57,7 @@ graph TB
         LID[Lidarr]
         PRO[Prowlarr]
         BAZ[Bazarr]
-        JEL[Jellyseerr]
+        JEL[Seerr]
         REC[Recyclarr]
         
         SON -->|API calls| QB
@@ -103,7 +103,7 @@ graph TB
 - No services are exposed publicly by default
 - Only local/LAN ports are available:
   - Jellyfin UI (optional, configurable)
-  - Jellyseerr UI (configurable for user access)
+  - Seerr UI (configurable for user access)
   - qBittorrent WebUI (internal port 8091 only)
   
 ## Network Configuration

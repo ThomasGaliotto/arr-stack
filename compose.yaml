@@ -213,19 +213,19 @@ services:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:6767"]
 
   # =============================================================================
-  # USER REQUEST INTERFACE (Jellyseerr)
+  # USER REQUEST INTERFACE (Seerr, successor of Jellyseerr/Overseerr)
   # Talks to Sonarr/Radarr on app_net and to Jellyfin on media_net.
-  # (linuxserver.io does not publish a Jellyseerr image; this is the official
-  # upstream image, which stores its state in /app/config.)
+  # The image runs as the "node" user (uid 1000) and has no init process of
+  # its own, hence `init: true`. On first start it migrates the existing
+  # Jellyseerr database in place: the host directory keeps its historical
+  # name (jellyseerr) so that no data has to be moved.
   # =============================================================================
 
-  jellyseerr:
-    image: docker.io/fallenbagel/jellyseerr:${JELLYSEERR_VERSION:-latest}
-    container_name: jellyseerr
+  seerr:
+    image: ghcr.io/seerr-team/seerr:${SEERR_VERSION:-v3}
+    container_name: seerr
     restart: unless-stopped
-    # Runs as the owner of its config directory: with all capabilities
-    # dropped, root could not write to a directory it does not own.
-    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    init: true
     cap_drop:
       - ALL
     security_opt:
@@ -241,7 +241,7 @@ services:
       - ${HOST_CONFIG_ROOT:-/srv/media-stack/config}/jellyseerr:/app/config
     healthcheck:
       <<: *healthcheck
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5055/api/v1/status"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5055/api/v1/settings/public"]
 
   # =============================================================================
   # MEDIA SERVER (Jellyfin)
@@ -299,7 +299,7 @@ networks:
     name: arr-stack-app-net
     driver: bridge
 
-  # Jellyfin and Jellyseerr. Not internal: Jellyfin publishes its UI and
+  # Jellyfin and Seerr. Not internal: Jellyfin publishes its UI and
   # fetches metadata.
   media_net:
     name: arr-stack-media-net

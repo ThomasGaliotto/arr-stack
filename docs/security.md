@@ -27,7 +27,7 @@ Secrets are never committed to Git:
 
 - WireGuard private key for ProtonVPN injected at runtime
 - ARR API keys managed via Docker secrets or environment variables at deployment time
-- Jellyseerr admin credentials generated automatically or provided securely during setup
+- Seerr admin credentials generated automatically or provided securely during setup
 
 The `secrets/` directory contains only `.gitkeep` placeholder. Actual secret files are excluded from Git tracking via `.gitignore`.
 
@@ -52,7 +52,7 @@ Containers only access explicitly mounted volumes:
 
 ## Port Exposure Policy
 
-By default, no ports are exposed to the public Internet. Services communicate via internal Docker networks only. User-facing services (Jellyseerr) can be exposed locally or behind a reverse proxy as needed.
+By default, no ports are exposed to the public Internet. Services communicate via internal Docker networks only. User-facing services (Seerr) can be exposed locally or behind a reverse proxy as needed.
 
 ## Restart Policies
 
