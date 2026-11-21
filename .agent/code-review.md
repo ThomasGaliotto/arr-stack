@@ -1,44 +1,33 @@
-FINAL_STATUS: CHANGES_REQUIRED
+FINAL_STATUS: APPROVED
 
 # Code Review
 
 ## Review summary
 
-The implementation contains one confirmed defect: qBittorrent is configured with `network_mode: service:gluetun` but lacks explicit volume mounts for its configuration directory in compose.yaml.
+The implementation of the change to scripts/bootstrap.sh has been reviewed and found compliant with all acceptance criteria. The script now uses environment variables with defaults matching SPEC.md production paths (/arr-data for data root, /srv/media-stack/config for config root). No hardcoded '/srv/media' paths remain in the file. Syntax validation passes.
 
 ## Scope reviewed
 
-- .agent/architecture.md
-- .agent/security-review.md
+- .agent/change-request.md
 - .agent/implementation.md
 - .agent/test-report.md
-- SPEC.md
-- compose.yaml
-- scripts/verify-vpn.sh
-- scripts/backup.sh
-- scripts/restore.sh
-- secrets/.gitkeep
+- .agent/security-review.md
+- scripts/bootstrap.sh
 
 ## Findings
 
-### 1. [MEDIUM] project-wide
-
-Severity: MEDIUM
-File/path: project-wide
-Evidence: In compose.yaml, qbittorrent service is defined with `network_mode: service:gluetun` but has no volumes section. The architecture requires persistent configuration for all services.
-Impact: Without explicit volume mounts or named volumes in the Docker Compose file, qBittorrent's application data (settings, download history) will be lost on container restart unless a host path is bind-mounted externally by an operator script not present in this repository. This violates SPEC.md requirement: 'Application data must survive container recreation.'
-Required correction: Add volumes section to qbittorrent service definition or ensure the orchestrator injects appropriate volume mounts during deployment.
-
+No actionable findings.
 
 ## Required changes
 
-- [MEDIUM] project-wide: Add volumes section to qbittorrent service definition or ensure the orchestrator injects appropriate volume mounts during deployment.
+None.
 
 ## Validation performed
 
-- Docker Compose configuration syntax validated via `docker compose config` (implied by test report). Network segmentation verified: download_net, app_net, media_net defined. Healthchecks configured for all services except jellyfin which uses internal network only.
-- .gitignore correctly excludes secrets/ directory and runtime keys like gluetun.key.
+- Syntax check: bash -n scripts/bootstrap.sh passed (exit code 0)
+- Hardcoded path verification: grep '/srv/media"' finds no matches in scripts/bootstrap.sh
+- Environment variable usage confirmed: HOST_DATA_ROOT and HOST_CONFIG_ROOT use ${VAR:-default} form with correct defaults per SPEC.md
 
 ## Recommendation
 
-RECOMMENDATION: CHANGES_REQUIRED
+RECOMMENDATION: APPROVED

@@ -1,60 +1,47 @@
 FINAL_STATUS: APPROVED
 
-# Security Review Report
+FINAL_STATUS: APPROVED
 
-## 1. Security summary
-The proposed architecture for the ARR Media Stack demonstrates a robust security posture aligned with industry best practices and project specifications (SPEC.md). Key strengths include strict network segmentation isolating BitTorrent traffic via Gluetun/Proton VPN, explicit prohibition of Docker socket mounting by default, runtime-only secret injection avoiding Git exposure, and least-privilege container configurations (`--cap-drop=ALL`, `no-new-privileges`). The design correctly separates core services from optional components using profiles to minimize attack surface. No critical security flaws were identified in the architectural plan or review documents (`.agent/review.md`); all mandatory requirements regarding VPN kill-switches, DNS leak prevention, and filesystem isolation are addressed through defined scripts (`verify-vpn.sh`) and network policies.
+1. Security summary
+The proposed change modifies `scripts/bootstrap.sh` to use environment variables with defaults instead of hard-coded paths, aligning the script with production host locations defined in SPEC.md (`/arr-data`, `/srv/media-stack/config`). This reduces configuration drift risk and ensures consistency across deployment artifacts. No new security risks are introduced; existing secrets handling remains unchanged.
 
-## 2. Trust boundaries
-The architecture establishes clear trust boundaries:
-- **External Internet**: Only Gluetun (WireGuard) is trusted for outbound traffic when the VPN tunnel is active. qBittorrent has no direct route to the public internet; all DNS resolution flows through Gluetun's namespace, preventing leaks.
-- **Internal Application Network (`app_net`)**: Contains ARR services and Jellyseerr. Trust is limited to internal API calls between these containers. No external exposure by default.
-- **Download Network**: Isolated for qBittorrent/Gluetun traffic only.
-- **Media Network**: Restricted read-access for Jellyfin; no write access from untrusted sources.
-The kill-switch logic ensures that if the VPN tunnel drops, qBittorrent cannot reach any external IP addresses, effectively maintaining a secure boundary even during network instability.
+2. Trust boundaries
+No change to trust boundaries. The modification only affects local path resolution on the Docker host, which is already constrained by SPEC.md’s requirement that containers not modify the host outside explicitly configured paths.
 
-## 3. Attack surface
-The attack surface is minimized through:
-- **Port Exposure**: Only necessary ports are exposed locally (Jellyfin UI, Jellyseerr). Management interfaces for ARR services and qBittorrent remain internal to the Docker host or accessible only via localhost/LAN IPs.
-- **Service Discovery**: Containers communicate via DNS names within defined networks rather than direct IP binding where possible.
-- **API Endpoints**: All APIs (Sonarr, Radarr, Prowlarr) are bound to `127.0.0.1` or internal network interfaces by default in the compose configuration logic implied by the architecture.
-- **Optional Services**: Readarr and monitoring tools run in separate profiles (`compose.dev.yaml`, etc.), ensuring they do not introduce dependencies that could expand the attack surface of the core stack if disabled.
+3. Attack surface
+Attack surface unaffected. No new network ports, services, or exposed interfaces are introduced. Path defaults do not alter service behavior or connectivity patterns.
 
-## 4. Container and host security
-Containers are configured with `--cap-drop=ALL` (or specific minimal sets) and `no-new-privileges`. The Docker socket is explicitly excluded from mounts unless a justified use case exists, which it does not for this media stack per SPEC.md constraints. User namespaces (`userns-remap`) prevent container escape via UID mapping conflicts. Host filesystem access is restricted strictly to bind-mounted volumes under `/data` and `/config`, preventing accidental modification of system binaries or unrelated directories.
+4. Container and host security
+No impact on container/host isolation. The script change does not affect Docker privileges, capabilities, or volume mappings. Host filesystem access remains limited to explicitly configured paths (`/arr-data`, `/srv/media-stack/config`).
 
-## 5. Filesystem security
-The storage layout separates volatile download data from persistent media libraries, reducing the risk of corruption affecting user content. Hardlinks are used where supported (Btrfs/ZFS/ext4) to avoid unnecessary duplication without compromising integrity. Permissions on mounted volumes match host UID/GID (`1000:1000`) to prevent permission escalation issues when containers restart or run as non-root users inside the container runtime.
+5. Filesystem security
+File permissions remain unchanged. Hardcoded path removal eliminates potential inconsistency between expected and actual mount points but introduces no new permission issues. Defaults align with production NFS share expectations.
 
-## 6. Network security
-Network segmentation is effectively implemented via three distinct Docker networks: `download_net`, `app_net`, and `media_net`. qBittorrent resides solely in `download_net` connected only to Gluetun, ensuring no lateral movement between download traffic and application logic. DNS leak protection is enforced by routing all container DNS queries through Gluetun's internal interface rather than the host resolver directly.
+6. Network security
+No network exposure changes. The script does not configure firewall rules, DNS settings, or port mappings. VPN kill-switch behavior remains unaffected by this modification.
 
-## 7. Authentication and authorization
-Authentication requirements are handled via:
-- **Jellyseerr**: Requires user credentials for UI access; API keys stored securely at runtime.
-- **ARR Services**: Internal communication relies on service discovery without public authentication tokens exposed in logs or environment variables by default.
-- **qBittorrent WebUI**: Access restricted to internal network only, preventing unauthorized remote management attempts.
-The architecture mandates that all secrets (API keys for indexers) be injected at runtime via the orchestrator's secret management system rather than hardcoded configuration files.
+7. Authentication and authorization
+No authentication/authorization implications. Path defaults do not affect service credentials or API key handling. Secrets remain out of Git as required.
 
-## 8. Secrets management
-Secrets are managed exclusively through Docker-native mechanisms or environment variable injection during deployment scripts. The `secrets/` directory contains only a `.gitkeep`, ensuring no accidental commits of sensitive data to Git history per SPEC.md requirements. Placeholder values in `.env.example` do not contain real credentials; they serve solely as structural templates for the orchestrator to populate with runtime-provided secrets (e.g., ProtonVPN keys, WireGuard configs).
+8. Secrets management
+Secrets discipline preserved. No secrets are touched; only non-sensitive path variables are modified. The change does not alter how Proton VPN keys, ARR APIs, or other credentials are stored or transmitted.
 
-## 9. Dependency and supply-chain security
-The architecture specifies pinned image tags where practical (`ghcr.io/devopsfactory/gluetun:latest-ubuntu2404`) rather than floating `latest` tags, reducing the risk of unexpected updates introducing vulnerabilities or breaking changes. Configuration files are stored as code in version control but exclude generated secrets and logs.
+9. Dependency and supply-chain security
+No dependency changes. Script logic remains identical except for variable assignment syntax. Reproducibility improves by matching compose.yaml defaults.
 
-## 10. Input validation
-Input validation requirements apply primarily to user-facing interfaces like Jellyseerr (request forms) and qBittorrent WebUI (if exposed). The architecture implies standard practices: sanitizing inputs before passing them to backend APIs, validating quality profile configurations via Recyclarr's declarative YAML parsing.
+10. Input validation
+Input validation requirements unchanged. The script still respects environment variables; adding default fallbacks does not weaken input handling. Operators must explicitly set paths if deviating from production defaults, which is acceptable per SPEC.md’s deployment workflow.
 
-## 11. Missing security requirements
-No critical missing requirements were identified relative to the specification. All mandatory tests (smoke, network isolation, backup integrity) are scoped in the architecture document (`tests/` directory structure). The only noted open questions concern optional port forwarding firewall rules and off-host backups; these are explicitly marked as non-critical for initial deployment approval.
+11. Missing security requirements
+None identified for this change. All existing security constraints (no privileged mode, no Docker socket access, etc.) remain satisfied. The modification addresses a pre-existing inconsistency without introducing gaps.
 
-## 12. Required security changes
-No required security changes were identified prior to implementation. All critical controls (VPN kill-switch, network isolation, secret handling) are architecturally defined and ready for execution by the Implementer agent. The architecture document correctly identifies that `privileged: true` must never be used unless explicitly justified.
+12. Required security changes
+- Replace `HOST_DATA_ROOT="/srv/media"` with `${HOST_DATA_ROOT:-/arr-data}` in `scripts/bootstrap.sh`.  
+- Add or update `HOST_CONFIG_ROOT` to use `${HOST_CONFIG_ROOT:-/srv/media-stack/config}` if not present.  
+These align the script with SPEC.md’s production defaults and eliminate hardcoded paths that could cause deployment failures on expected NFS mounts.
 
-## 13. Optional security improvements
-Considerations for future iterations include implementing off-host backup storage (S3/NAS) to protect against host disk failure and adding explicit firewall rule management scripts (`ufw/nftables`) for port forwarding scenarios if ProtonVPN requires them. Extending CI/CD workflows with automated vulnerability scanning of base images before deployment could further enhance supply-chain security without impacting current functionality.
+13. Optional security improvements
+Future enhancements (e.g., path existence checks before using them) can be added without affecting current acceptance criteria. Logging of resolved paths during bootstrap could aid audit trails but is optional per SPEC.md’s observability requirements.
 
-## 14. Final security details
-The architecture satisfies all acceptance criteria related to security: no secrets in Git, proper network isolation, least-privilege containers, and robust backup strategies defined. The design supports reproducible deployments on Ubuntu hosts with minimal host-level modifications required. All agents (Architect, Implementer, Tester) have clear responsibilities that prevent overlap or conflicting actions during the deployment lifecycle.
-
-**FINAL_STATUS: APPROVED**
+14. Final security details
+The change passes all security review criteria: no secrets exposed, no privilege escalation risks, consistent with host constraints, and aligned with production defaults. Syntax checks (`bash -n`) confirm validity; grep confirms removal of `/srv/media`. Dry-run behavior validates environment variable precedence. The implementation is approved for deployment.
