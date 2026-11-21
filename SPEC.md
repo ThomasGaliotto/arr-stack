@@ -217,6 +217,17 @@ The implementation must avoid unnecessary file copies during ARR imports.
 
 Configuration data must be persistent.
 
+Host locations (production homelab):
+
+* Data root: `/arr-data`, an NFS share from the NAS
+  (`192.168.0.242:/volume1/arr-data`) mounted on the Docker host. It is
+  mounted at `/data` in the containers (`HOST_DATA_ROOT`).
+* Config root: `/srv/media-stack/config` on the local disk of the Docker
+  host, one sub-directory per application (`HOST_CONFIG_ROOT`).
+
+Every script, default value and document must use these host locations
+consistently, including `scripts/bootstrap.sh`.
+
 Application data must survive container recreation.
 
 ---
@@ -301,8 +312,8 @@ instance:
   name: home-media
 
 host:
-  data_root: /srv/media
-  config_root: /srv/media-stack
+  data_root: /arr-data
+  config_root: /srv/media-stack/config
   timezone: Europe/Brussels
   uid: 1000
   gid: 1000

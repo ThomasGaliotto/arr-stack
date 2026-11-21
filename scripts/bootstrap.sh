@@ -9,8 +9,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="${SCRIPT_DIR}"
-HOST_DATA_ROOT="/srv/media"
-HOST_CONFIG_ROOT="/srv/media-stack/config"
+HOST_DATA_ROOT="${HOST_DATA_ROOT:-/arr-data}"
+HOST_CONFIG_ROOT="${HOST_CONFIG_ROOT:-/srv/media-stack/config}"
 
 # Colors for output
 RED='\033[0;31m'
